@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Socket IO Chat</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://use.fontawesome.com/releases/v5.3.1/css/all.css"
+      integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU"
+      crossorigin="anonymous"
+    />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(120deg, #2980b9, #8e44ad);
+        min-height: 100vh;
+        transition: 0.5s;
+        color: white;
+      }
+      .container {
+        margin: auto;
+        width: 100%;
+        height: 100%;
+      }
+      .area-chat {
+        margin: 10px auto 15px;
+        width: 90%;
+        height: 570px;
+        overflow-y: scroll;
+      }
+      .area-type {
+        width: 90%;
+        height: auto;
+        margin: auto;
+      }
+      input {
+        margin-right: 2px;
+        width: calc(100% - 67px) !important;
+      }
+      #send-message {
+        width: 65px;
+      }
+      .titleApp {
+        margin: 8px auto;
+        font-size: 30px;
+        width: 90%;
+      }
+      .user {
+        margin-right: 20px;
+        font-size: 15px;
+      }
+      #messages {
+        margin-left: 20px;
+      }
+      #btn-logout {
+        color: rgb(255, 133, 133);
+        text-decoration: none;
+        opacity: 0.5;
+      }
+      #btn-logout:hover {
+        opacity: 1;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="titleApp text-center">
+        Welcome to Socket IO Chat
+        <div class="user text-right">
+          <div>Xin chào, <%= user.name %></div>
+          <a href="#" id="btn-logout"
+            ><i class="fas fa-sign-out-alt"></i>&nbsp;&nbsp;Thoát</a
+          >
+        </div>
+        <input id="name" value="<%= user.name %>" hidden />
+      </div>
+
+      <div class="area-chat">
+        <ul id="notification"></ul>
+        <ul id="messages"></ul>
+      </div>
+
+      <div class="area-type">
+        <form action="" id="chat-form">
+          <input
+            type="text"
+            class="form-control float-left"
+            id="input-message"
+            placeholder="Type your message here..."
+          />
+          <button id="send-message" class="btn btn-success">Send</button>
+        </form>
+      </div>
+    </div>
+  </body>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // Khởi tạo socket
+    const socket = io();
+
+    const chatForm = document.querySelector("#chat-form");
+    const inputMessage = document.querySelector("#input-message");
+    const messages = document.querySelector("#messages");
+    const notification = document.querySelector("#notification");
+    const name = document.querySelector("#name").value;
+
+    if (name) {
+      socket.emit("user-login", name);
+    }
+
+    socket.on("user-join", (data) => {
+      const li = document.createElement("div");
+      li.innerHTML = `<b>${data.name}</b> vừa tham gia phòng chat, số người trong phòng chat là <b>${data.numUsers}</b>`;
+      notification.appendChild(li);
+    });
+
+    socket.on("user-left", (data) => {
+      const li = document.createElement("div");
+      li.innerHTML = `<b>${data.name}</b> vừa rời phòng chat, số người trong phòng chat là <b>${data.numUsers}</b>`;
+      notification.appendChild(li);
+    });
+
+    //Nhận tin nhắn từ server
+    socket.on("server-sent-data", (message) => {
+      const li = document.createElement("li");
+      li.innerHTML = `<b>${message.name}</b>: ${message.message}`;
+      messages.appendChild(li);
+    });
+
+    chatForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      // Gửi tin nhắn tới server
+      socket.emit("client-sent-data", {
+        name: name,
+        message: inputMessage.value,
+      });
+
+      // Xóa input
+      inputMessage.value = "";
+    });
+
+    // Đăng xuất
+    $("#btn-logout").click(() => {
+      $.ajax({
+        url: "/logout",
+        type: "POST",
+        success: function (data) {
+          window.location.href = "/";
+        },
+      });
+    });
+  </script>
+</html>
